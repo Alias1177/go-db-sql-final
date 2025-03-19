@@ -2,7 +2,7 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
+	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
 	"time"
@@ -46,21 +46,19 @@ func TestAddGetDelete(t *testing.T) {
 
 	parcel.Number = id
 
-	fmt.Printf("Добавлена посылка № %d на адрес %s\n", parcel.Number, parcel.Address)
-
 	// Получаем посылку
 	retrieved, err := store.Get(id)
 	require.NoError(t, err)
 	require.Equal(t, parcel.Client, retrieved.Client)
 	require.Equal(t, parcel.Status, retrieved.Status)
 	require.Equal(t, parcel.Address, retrieved.Address)
+	assert.Equal(t, parcel, retrieved)
 
 	err = store.Delete(id)
 	require.NoError(t, err)
 
 	_, err = store.Get(id)
 	require.Error(t, err)
-	fmt.Printf("Посылка № %d успешно удалена\n", id)
 }
 
 // TestSetAddress проверяет обновление адреса
@@ -79,17 +77,14 @@ func TestSetAddress(t *testing.T) {
 
 	parcel.Number = id
 
-	fmt.Printf(" Добавлена посылка № %d на адрес %s\n", parcel.Number, parcel.Address)
-
 	newAddress := "new test address"
 	err = store.SetAddress(id, newAddress)
 	require.NoError(t, err)
 
 	resReceived, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, newAddress, resReceived.Address)
+	assert.Equal(t, newAddress, resReceived.Address)
 
-	fmt.Printf(" Адрес посылки № %d обновлён на %s\n", parcel.Number, newAddress)
 }
 
 // TestSetStatus проверяет обновление статуса
@@ -106,8 +101,6 @@ func TestSetStatus(t *testing.T) {
 	require.NoError(t, err)
 	parcel.Number = id
 
-	fmt.Printf(" Добавлена посылка № %d\n", parcel.Number)
-
 	newStatus := ParcelStatusSent
 	err = store.SetStatus(parcel.Number, newStatus)
 	require.NoError(t, err)
@@ -115,8 +108,8 @@ func TestSetStatus(t *testing.T) {
 	retrieved, err := store.Get(parcel.Number)
 	require.NoError(t, err)
 	require.Equal(t, newStatus, retrieved.Status)
+	assert.Equal(t, parcel.Status, retrieved.Status)
 
-	fmt.Printf("✅ Статус посылки № %d обновлён на %s\n", parcel.Number, newStatus)
 }
 
 func TestGetByClient(t *testing.T) {
@@ -151,6 +144,7 @@ func TestGetByClient(t *testing.T) {
 	storedParcels, err := store.GetByClient(client)
 	require.NoError(t, err)
 	require.Len(t, storedParcels, len(parcels))
+	assert.Equal(t, parcels, storedParcels)
 
 	// Проверяем, что каждая полученная посылка соответствует ожидаемой
 	for _, storedParcel := range storedParcels {
@@ -159,7 +153,7 @@ func TestGetByClient(t *testing.T) {
 		require.Equal(t, expectedParcel.Client, storedParcel.Client)
 		require.Equal(t, expectedParcel.Status, storedParcel.Status)
 		require.Equal(t, expectedParcel.Address, storedParcel.Address)
+		assert.Equal(t, expectedParcel, storedParcel)
 	}
 
-	fmt.Printf("Успешно получены %d посылки для клиента %d\n", len(storedParcels), client)
 }

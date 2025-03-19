@@ -36,7 +36,7 @@ func (s ParcelStore) Get(number int) (Parcel, error) {
 	err := row.Scan(&p.Number, &p.Client, &p.Status, &p.Address, &p.CreatedAt)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return Parcel{}, errors.New("посылка не найдена")
+			return Parcel{}, errors.New("not found yor parcel")
 		}
 		return Parcel{}, err
 	}
@@ -61,6 +61,9 @@ func (s ParcelStore) GetByClient(client int) ([]Parcel, error) {
 		}
 		parcels = append(parcels, p)
 	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
 
 	return parcels, nil
 }
@@ -83,7 +86,7 @@ func (s ParcelStore) SetAddress(number int, address string) error {
 		return err
 	}
 	if rowsAffected == 0 {
-		return errors.New("нельзя изменить адрес, если статус не 'registered'")
+		return errors.New("can`t change address")
 	}
 
 	return nil
@@ -95,13 +98,11 @@ func (s ParcelStore) Delete(number int) error {
 	if err != nil {
 		return err
 	}
+	//тут просто скипаю что бы выполнилось до конца
+	rowsAffected, _ := result.RowsAffected()
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return err
-	}
 	if rowsAffected == 0 {
-		return errors.New("нельзя удалить посылку, если статус не 'registered'")
+		return errors.New("can`t delete parcel if status not equal 'registered'")
 	}
 
 	return nil
