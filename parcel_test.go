@@ -49,9 +49,6 @@ func TestAddGetDelete(t *testing.T) {
 	// Получаем посылку
 	retrieved, err := store.Get(id)
 	require.NoError(t, err)
-	require.Equal(t, parcel.Client, retrieved.Client)
-	require.Equal(t, parcel.Status, retrieved.Status)
-	require.Equal(t, parcel.Address, retrieved.Address)
 	assert.Equal(t, parcel, retrieved)
 
 	err = store.Delete(id)
@@ -89,27 +86,31 @@ func TestSetAddress(t *testing.T) {
 
 // TestSetStatus проверяет обновление статуса
 func TestSetStatus(t *testing.T) {
-
+	// prepare
 	db, err := sql.Open("sqlite", "tracker.db")
-	require.NoError(t, err)
+	if err != nil {
+		require.NoError(t, err)
+	}
 	defer db.Close()
-
 	store := NewParcelStore(db)
 	parcel := getTestParcel()
 
-	id, err := store.Add(parcel)
-	require.NoError(t, err)
-	parcel.Number = id
+	// add
+	parcel.Number, err = store.Add(parcel)
 
-	newStatus := ParcelStatusSent
-	err = store.SetStatus(parcel.Number, newStatus)
+	require.NoError(t, err)
+	require.NotEmpty(t, parcel.Number)
+
+	// set status
+	err = store.SetStatus(parcel.Number, ParcelStatusSent)
+
 	require.NoError(t, err)
 
-	retrieved, err := store.Get(parcel.Number)
-	require.NoError(t, err)
-	require.Equal(t, newStatus, retrieved.Status)
-	assert.Equal(t, parcel.Status, retrieved.Status)
+	// check
+	stored, err := store.Get(parcel.Number)
 
+	require.NoError(t, err)
+	require.Equal(t, ParcelStatusSent, stored.Status)
 }
 
 func TestGetByClient(t *testing.T) {
@@ -144,15 +145,11 @@ func TestGetByClient(t *testing.T) {
 	storedParcels, err := store.GetByClient(client)
 	require.NoError(t, err)
 	require.Len(t, storedParcels, len(parcels))
-	assert.Equal(t, parcels, storedParcels)
 
 	// Проверяем, что каждая полученная посылка соответствует ожидаемой
 	for _, storedParcel := range storedParcels {
 		expectedParcel, exists := parcelMap[storedParcel.Number]
 		require.True(t, exists)
-		require.Equal(t, expectedParcel.Client, storedParcel.Client)
-		require.Equal(t, expectedParcel.Status, storedParcel.Status)
-		require.Equal(t, expectedParcel.Address, storedParcel.Address)
 		assert.Equal(t, expectedParcel, storedParcel)
 	}
 
